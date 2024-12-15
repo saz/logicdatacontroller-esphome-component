@@ -1,0 +1,116 @@
+external_components:
+  - source:
+      type: git
+      url: https://github.com/saz/logicdatacontroller-esphome-component
+      ref: main
+    components: [logic_data_controller]
+
+substitutions:
+  name: saz_desk
+  friendly_name: "saz desk"
+  button_up_pin: GPIO14
+  button_down_pin: GPIO12
+  output_up_pin: GPIO04
+  output_down_pin: GPIO05
+  sensor_pin: GPIO02
+  min_table_height: "80"
+  max_table_height: "121"
+
+packages:
+  device_base: !include common/device_base.yaml
+
+logic_data_controller:
+  id: $name
+  pin_motor_up: $output_up_pin
+  pin_motor_down: $output_down_pin
+  pin_sensor: $sensor_pin
+  height:
+    name: "Height"
+    id: "${name}_height"
+  min_height: $min_table_height
+  max_height: $max_table_height
+
+binary_sensor:
+  - platform: gpio
+    name: "Up"
+    id: "${name}_physical_up"
+    pin: 
+      number: $button_up_pin
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+  - platform: gpio
+    name: "Down"
+    id: "${name}_physical_down"
+    pin: 
+      number: $button_down_pin
+      inverted: true
+      mode:
+        input: true
+        pullup: true
+  - platform: template
+    name: "Moving up"
+    id: "${name}_moving_up"
+    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_RAISING;
+  - platform: template
+    name: "Moving down"
+    id: "${name}_moving_down"
+    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_LOWERING;
+  - platform: template
+    name: "Fully up"
+    id: "${name}_endpoint_up"
+    lambda: return id(saz_desk).current_endpoint == logic_data_controller::ENDPOINT_UP;
+  - platform: template
+    name: "Fully down"
+    id: "${name}_endpoint_down"
+    lambda: return id(saz_desk).current_endpoint == logic_data_controller::ENDPOINT_DOWN;
+
+switch:
+  - platform: template
+    name: "Move up"
+    id: "${name}_move_up"
+    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_RAISING;
+    turn_on_action: 
+      lambda: return id(saz_desk).move_up();
+    turn_off_action: 
+      lambda: return id(saz_desk).move_stop();
+  - platform: template
+    name: "Move down"
+    id: "${name}_move_down"
+    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_LOWERING;
+    turn_on_action: 
+      lambda: return id(saz_desk).move_down();
+    turn_off_action: 
+      lambda: return id(saz_desk).move_stop();
+
+button:
+  - platform: template
+    name: "Standing"
+    id: "${name}_standing"
+    on_press:
+      then:
+        - lambda: id(saz_desk).move_to(120);
+  - platform: template
+    name: "Sitting"
+    id: "${name}_sitting"
+    on_press: 
+      then:
+        - lambda: id(saz_desk).move_to(82);
+
+cover:
+  - platform: feedback
+    name: $friendly_name
+    open_action:
+      - switch.turn_on: "${name}_move_up"
+    open_duration: 15s
+    open_endstop: "${name}_endpoint_up"
+    open_sensor: "${name}_moving_up"
+    close_action:
+      - switch.turn_on: "${name}_move_down"
+    close_duration: 15s
+    close_endstop: "${name}_endpoint_down"
+    close_sensor: "${name}_moving_down"
+    stop_action:
+      - switch.turn_off: "${name}_move_up"
+      - switch.turn_off: "${name}_move_down"
