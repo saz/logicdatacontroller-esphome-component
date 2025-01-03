@@ -13,7 +13,7 @@ substitutions:
   output_up_pin: GPIO04
   output_down_pin: GPIO05
   sensor_pin: GPIO02
-  min_table_height: "80"
+  min_table_height: "74"
   max_table_height: "121"
 
 packages:
@@ -40,6 +40,15 @@ binary_sensor:
       mode:
         input: true
         pullup: true
+    on_press:
+      then:
+        - lambda: return id(${name}).move_up();
+    on_release:
+      then:
+        - lambda: return id(${name}).move_stop();
+    on_click:
+      then:
+        - button.press: ${name}_standing
   - platform: gpio
     name: "Down"
     id: "${name}_physical_down"
@@ -49,40 +58,49 @@ binary_sensor:
       mode:
         input: true
         pullup: true
+    on_press: 
+      then:
+        - lambda: return id(${name}).move_down();
+    on_release: 
+      then:
+        - lambda: return id(${name}).move_stop();
+    on_click: 
+      then:
+        - button.press: ${name}_sitting
   - platform: template
     name: "Moving up"
     id: "${name}_moving_up"
-    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_RAISING;
+    lambda: return id(${name}).current_operation == logic_data_controller::OPERATION_RAISING;
   - platform: template
     name: "Moving down"
     id: "${name}_moving_down"
-    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_LOWERING;
+    lambda: return id(${name}).current_operation == logic_data_controller::OPERATION_LOWERING;
   - platform: template
     name: "Fully up"
     id: "${name}_endpoint_up"
-    lambda: return id(saz_desk).current_endpoint == logic_data_controller::ENDPOINT_UP;
+    lambda: return id(${name}).current_endpoint == logic_data_controller::ENDPOINT_UP;
   - platform: template
     name: "Fully down"
     id: "${name}_endpoint_down"
-    lambda: return id(saz_desk).current_endpoint == logic_data_controller::ENDPOINT_DOWN;
+    lambda: return id(${name}).current_endpoint == logic_data_controller::ENDPOINT_DOWN;
 
 switch:
   - platform: template
     name: "Move up"
     id: "${name}_move_up"
-    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_RAISING;
+    lambda: return id(${name}).current_operation == logic_data_controller::OPERATION_RAISING;
     turn_on_action: 
-      lambda: return id(saz_desk).move_up();
+      lambda: return id(${name}).move_up();
     turn_off_action: 
-      lambda: return id(saz_desk).move_stop();
+      lambda: return id(${name}).move_stop();
   - platform: template
     name: "Move down"
     id: "${name}_move_down"
-    lambda: return id(saz_desk).current_operation == logic_data_controller::OPERATION_LOWERING;
+    lambda: return id(${name}).current_operation == logic_data_controller::OPERATION_LOWERING;
     turn_on_action: 
-      lambda: return id(saz_desk).move_down();
+      lambda: return id(${name}).move_down();
     turn_off_action: 
-      lambda: return id(saz_desk).move_stop();
+      lambda: return id(${name}).move_stop();
 
 button:
   - platform: template
@@ -90,13 +108,13 @@ button:
     id: "${name}_standing"
     on_press:
       then:
-        - lambda: id(saz_desk).move_to(120);
+        - lambda: id(${name}).move_to(121);
   - platform: template
     name: "Sitting"
     id: "${name}_sitting"
     on_press: 
       then:
-        - lambda: id(saz_desk).move_to(82);
+        - lambda: id(${name}).move_to(80);
 
 cover:
   - platform: feedback
