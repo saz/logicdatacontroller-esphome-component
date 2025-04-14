@@ -16,9 +16,61 @@ substitutions:
   min_table_height: "74"
   max_table_height: "121"
 
-packages:
-  device_base: !include common/device_base.yaml
+esphome:
+  name: $name
+  friendly_name: $friendly_name
 
+esp8266:
+  board: esp8285  # generic board
+
+wifi:
+  ssid: !secret wifi_ssid
+  password: !secret wifi_password
+  reboot_timeout: 30min
+  fast_connect: true
+
+logger:
+
+api:
+  reboot_timeout: 30min
+  encryption:
+    key: some/random/key/for/the/api
+
+ota:
+  - platform: esphome
+    password: !secret esphome_ota_password
+
+time:
+  - platform: homeassistant
+    id: homeassistant_time
+
+text_sensor:
+  - platform: version
+    name: "Version"
+  - platform: wifi_info
+    ip_address:
+      name: "IP"
+    ssid:
+      name: "SSID"
+    bssid:
+      name: "BSSID"
+
+sensor:
+  - platform: uptime
+    name: "Uptime"
+    update_interval: 10min
+  - platform: wifi_signal
+    name: "WiFi Signal"
+    filters:
+      or:
+        - heartbeat: 1h
+        - delta: 5
+
+button:
+  - platform: restart
+    name: "Restart"
+
+# logic data component config 
 logic_data_controller:
   id: $name
   pin_motor_up: $output_up_pin
